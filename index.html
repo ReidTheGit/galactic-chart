@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Galactic Chart</title>
+<title>Vash-Karel Galactic Charter</title>
 <meta name="description" content="An interactive 3D star chart: 981 systems, empire borders, federations, nebulae, shroud worlds and a detailed orbital view of every system.">
 <meta name="theme-color" content="#04030a">
-<meta property="og:title" content="Galactic Chart">
+<meta property="og:title" content="Vash-Karel Galactic Charter">
 <meta property="og:description" content="Interactive 3D star map — 981 systems, empire borders, federations and orbital system views.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2304030a'/%3E%3Cpath d='M32 6 C40 22 40 42 32 58 C24 42 24 22 32 6 Z' fill='none' stroke='%237fe3d4' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23e8c87a'/%3E%3C/svg%3E">
@@ -97,6 +97,15 @@ h5{font-family:var(--disp);margin:15px 0 5px;font-size:8.5px;font-weight:600;let
 .pl q{quotes:none;width:8px;height:8px;flex:0 0 8px;border-radius:50%;
  display:inline-block;position:relative;top:-1px}
 .note{font-size:11.5px;line-height:1.55;color:var(--dim);font-style:italic}
+.lore{border-left:2px solid #ffd98a;padding:1px 0 1px 9px;margin:2px 0 6px}
+.lore b{display:block;font-family:var(--disp);font-size:12.5px;font-weight:600;
+ letter-spacing:.1em;color:#ffd98a}
+.lore span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--dim);margin-top:2px}
+.lore-t{font-size:11.5px;line-height:1.62;color:var(--txt);opacity:.9;margin-top:6px}
+.lore-q{margin-top:8px;padding-left:9px;border-left:2px solid rgba(255,217,138,.35);
+ font-family:var(--disp);font-size:11.5px;font-style:italic;letter-spacing:.09em;
+ color:#ffd98a;opacity:.85}
 .btn{display:inline-block;margin:7px 6px 0 0;padding:5px 11px;font-size:10.5px;letter-spacing:.14em;
  text-transform:uppercase;border:1px solid var(--line);cursor:var(--spear) 2 2,pointer;
  color:var(--dim);background:rgba(10,14,24,.6)}
@@ -156,7 +165,7 @@ h5{font-family:var(--disp);margin:15px 0 5px;font-size:8.5px;font-weight:600;let
 <canvas id="cv"></canvas>
 <div id="vig"></div>
 <div class="ui" id="top">
- <div id="brand"><div id="title">Galactic Chart</div><div id="stat"></div></div>
+ <div id="brand"><div id="title">Vash-Karel Galactic Charter</div><div id="stat"></div></div>
  <div id="search"><input id="q" placeholder="Search systems…" autocomplete="off" spellcheck="false"><div id="res" class="pane"></div></div>
 </div>
 
@@ -177,6 +186,7 @@ h5{font-family:var(--disp);margin:15px 0 5px;font-size:8.5px;font-weight:600;let
   <h4>Markers</h4>
   <label><input type="checkbox" id="lCap" checked> Capitals <i style="background:#e8c87a"></i></label>
   <label><input type="checkbox" id="lShroud"> Shroud worlds <i style="background:#b58ae8"></i></label>
+  <label><input type="checkbox" id="lLore" checked> Sites of interest <i style="background:#ffd98a"></i></label>
   <h4>Ambience</h4>
   <label><input type="checkbox" id="lNebula" checked> Nebulae</label>
   <label><input type="checkbox" id="lDeep" checked> Deep space</label>
@@ -295,6 +305,27 @@ function bNote(c){return NOTE[bKind(c)]||'An uninhabitable body.'}
 var NOTABLE={};
 NOTABLE[K.GAS]=1;NOTABLE[K.SCAR]=1;NOTABLE[K.RING]=1;NOTABLE[K.BROKEN]=1;NOTABLE[K.CRYSTAL]=1;
 function notable(p){return !!(p.pop||HABS[p.c]||NOTABLE[bKind(p.c)])}
+
+/* ---------------------------------------------------------------------------
+   Sites of interest. Keyed by system id; `w` names the body the site sits on.
+   Add an entry here and it appears on the chart, in the system panel and on the
+   body itself — nothing else needs changing.
+   --------------------------------------------------------------------------- */
+var LORE={
+ 329:{
+  w:'Bikhul II',
+  n:'The Grand Herald',
+  k:'Excavation site',
+  t:'Beneath the smokestacks of an industrial people who do not know what they stand '+
+    'upon lie the halls of an ancient Khorvathian research station, abandoned so long '+
+    'that only the machine at its heart still carries a name: Vash-Karel Thardin. Here '+
+    'the Frontier woke it, and here the Charter was opened — every world, every darkness, '+
+    'all that had been forgotten. The halls are not empty. Dust, old constructs and the '+
+    'beings of Ushkarath keep what the Ancients left behind.',
+  q:'Thel Ardem, Narkarha Valsim'
+ }
+};
+function loreBody(sid,name){var L=LORE[sid];return (L&&L.w===name)?L:null}
 
 var FLAGHIDE=/^(resource_region|precursor|has_|visited_by|empire_cluster|wormhole|lcluster|starting_)/;
 var FLAGNICE={empire_home_system:'Empire home system',enclave:'Enclave present',
@@ -648,6 +679,35 @@ SYS.forEach(function(s,k){
  shroudGrp.add(sp);MARKERS.push(ring);
  shroudList.push({ix:k,ring:ring,halo:sp,worlds:worlds,scars:scars,enc:enc,nex:nex,ruin:ruin})});
 
+/* sites of interest: a ring and a beam of light rising from the system */
+var loreGrp=new THREE.Group();gScene.add(loreGrp);var loreList=[],loreLabels=[];
+Object.keys(LORE).forEach(function(sid){
+ var ix=idx[sid];
+ if(ix==null)return;
+ var L=LORE[sid],x=pos[ix*3],z=pos[ix*3+2],col=0xffd98a;
+ var ring=ringMesh(GAL*.0085,GAL*.0105,col,.95,32);
+ ring.position.set(x,0,z);loreGrp.add(ring);MARKERS.push(ring);
+ var ring2=ringMesh(GAL*.015,GAL*.0162,col,.4,32);
+ ring2.position.set(x,0,z);loreGrp.add(ring2);MARKERS.push(ring2);
+ /* the beam that reached the upper atmosphere and then beyond */
+ var h=GAL*.085,seg=18,P=new Float32Array(seg*3),C=new Float32Array(seg*3);
+ for(var j=0;j<seg;j++){
+  var t=j/(seg-1);
+  P[j*3]=x;P[j*3+1]=t*h;P[j*3+2]=z;
+  var a=1-t;
+  C[j*3]=1*a;C[j*3+1]=.85*a;C[j*3+2]=.54*a}
+ var bg=new THREE.BufferGeometry();
+ bg.setAttribute('position',new THREE.BufferAttribute(P,3));
+ bg.setAttribute('color',new THREE.BufferAttribute(C,3));
+ var beam=new THREE.Line(bg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,
+  opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+ beam.frustumCulled=false;loreGrp.add(beam);
+ var glow=sprite(T_SOFT,col,.5);
+ glow.position.set(x,0,z);glow.scale.set(GAL*.05,GAL*.05,1);loreGrp.add(glow);
+ loreList.push({ix:ix,ring:ring,ring2:ring2,glow:glow,beam:beam,sid:+sid});
+ loreLabels.push({v:new THREE.Vector3(x,h*1.12,z),y0:h*1.12,n:L.n,
+  c:'#'+new THREE.Color(col).getHexString()})});
+
 /* federations — each gets its own group, shown one at a time as a focused view */
 var fedGrp=new THREE.Group();gScene.add(fedGrp);
 var fedLabels=[],FEDS={},FEDCOL=[0x7fe3d4,0xe8c87a,0xb58ae8,0xff9e73,0x9db8ff];
@@ -811,6 +871,9 @@ nebLabels.forEach(function(L){
   'text-transform:uppercase;text-shadow:0 0 8px #000;color:'+L.c)});
 fedLabels.forEach(function(L){
  L.el=mkLabel(L.n,'font-family:var(--disp);font-size:10px;letter-spacing:.22em;'+
+  'text-transform:uppercase;text-shadow:0 0 9px #000,0 0 3px #000;color:'+L.c)});
+loreLabels.forEach(function(L){
+ L.el=mkLabel(L.n,'font-family:var(--disp);font-size:9.5px;letter-spacing:.2em;'+
   'text-transform:uppercase;text-shadow:0 0 9px #000,0 0 3px #000;color:'+L.c)});
 
 /* ========================= camera ========================= */
@@ -1000,6 +1063,9 @@ function selectSystem(i){
  if(minor)
   h+='<div class="pl" style="opacity:.55;margin-top:6px"><u>'+minor
    +' further barren and inhospitable bodies</u></div>';
+ var LS=LORE[s.id];
+ if(LS)h+='<h5>Site of interest</h5><div class="lore"><b>'+LS.n+'</b>'
+  +'<span>'+LS.k+' · '+LS.w+'</span></div>';
  var fg=[];
  (s.f||[]).forEach(function(f){if(!FLAGHIDE.test(f))fg.push(FLAGNICE[f]||titleise(f))});
  if(fg.length)h+='<h5>Notes</h5><div class="note">'+fg.slice(0,6).join(' · ')+'</div>';
@@ -1233,7 +1299,8 @@ function enterSystem(i){
 
  sysMode=true;sTgt.set(0,0,0);sYaw=.6;sPitch=.78;sDist=R*2.2;apply();
  gScene.visible=false;sScene.visible=true;
- empLabels.forEach(hideLab);nebLabels.forEach(hideLab);fedLabels.forEach(hideLab);
+ empLabels.forEach(hideLab);nebLabels.forEach(hideLab);
+ fedLabels.forEach(hideLab);loreLabels.forEach(hideLab);
  backBtn.style.display='block';sysNameBox.style.display='block';orbitTog.style.display='block';
  bodyBox.style.display='none';focusBody=null;
  var cap=capOfSys[s.id],on=ownerName(s.o);
@@ -1290,6 +1357,11 @@ function showBody(b){
    +(HABS[p.c]?'uninhabited':'none')+'</span></div>';
   h+='<h5>Status</h5><div class="note">'
    +(HABS[p.c]?'Habitable, but unsettled.':bNote(p.c))+'</div>'}
+ var LB=loreBody(s.id,p.n);
+ if(LB){
+  h+='<h5>'+LB.k+'</h5><div class="lore"><b>'+LB.n+'</b></div>'
+   +'<div class="lore-t">'+LB.t+'</div>';
+  if(LB.q)h+='<div class="lore-q">'+LB.q+'</div>'}
  bodyBox.innerHTML=h;bodyBox.style.display='block'}
 
 /* ========================= UI wiring ========================= */
@@ -1394,6 +1466,9 @@ $('lNebula').onchange=function(){
  nebGrp.visible=this.checked;
  if(!this.checked)nebLabels.forEach(hideLab)};
 $('lShroud').onchange=function(){shroudGrp.visible=this.checked};
+$('lLore').onchange=function(){
+ loreGrp.visible=this.checked;
+ if(!this.checked)loreLabels.forEach(hideLab)};
 $('lLabel').onchange=function(){
  showLabels=this.checked;
  if(!showLabels)empLabels.forEach(hideLab)};
@@ -1408,6 +1483,10 @@ $('lElev').onchange=function(){
  gT.attributes.position.needsUpdate=true;
  capList.forEach(function(c){c.ring.position.y=pos[c.ix*3+1];c.dot.position.y=pos[c.ix*3+1]});
  shroudList.forEach(function(c){c.ring.position.y=pos[c.ix*3+1];c.halo.position.y=pos[c.ix*3+1]});
+ loreList.forEach(function(c,j){
+  var y=pos[c.ix*3+1];
+  c.ring.position.y=y;c.ring2.position.y=y;c.glow.position.y=y;c.beam.position.y=y;
+  if(loreLabels[j])loreLabels[j].v.y=loreLabels[j].y0+y});
  for(var m=0;m<LANES.length;m++){
   var a=idx[LANES[m][0]],b=idx[LANES[m][1]];
   if(a==null||b==null)continue;
@@ -1518,6 +1597,8 @@ function tick(now){
    if(fly.t>=1)fly=null}
   capList.forEach(function(c){c.ring.lookAt(cam.position);c.dot.lookAt(cam.position)});
   if(shroudGrp.visible)shroudList.forEach(function(c){c.ring.lookAt(cam.position)});
+  if(loreGrp.visible)loreList.forEach(function(c){
+   c.ring.lookAt(cam.position);c.ring2.lookAt(cam.position)});
   if(fedFocus&&FEDS[fedFocus])FEDS[fedFocus].grp.traverse(function(o){
    if(o.userData.bb)o.lookAt(cam.position)});
   var A=project(o0),B=project(o1),ppu=(A&&B)?Math.abs(B[0]-A[0])/(GAL*.1):0;
@@ -1531,6 +1612,9 @@ function tick(now){
    var span=Math.sqrt(L.n)*18*ppu;
    return span<40?0:Math.min(1,(span-40)/48)},taken);
   else empLabels.forEach(hideLab);
+  if(loreGrp.visible&&!fedFocus)placeLabels(loreLabels,14,function(){
+   return ppu*GAL<380?0:Math.min(1,(ppu*GAL-380)/260)*.95},taken);
+  else loreLabels.forEach(hideLab);
   if(nebGrp.visible&&!fedFocus)placeLabels(nebLabels,14,function(L){
    var span=L.r*2*ppu;
    return span<80?0:Math.min(1,(span-80)/140)*.7},taken);
@@ -1594,6 +1678,9 @@ window.chart={
  exit:function(){if(sysMode)exitSystem()},
  federation:setFed,
  bodyCount:function(){return sysBodies.length},
+ showByName:function(n){
+  for(var i=0;i<sysBodies.length;i++)if(sysBodies[i].p.n===n){showBody(sysBodies[i]);return true}
+  return false},
  selVisible:function(){return !!selBody&&selBody.visible},
  angles:function(){return sysBodies.map(function(b){
   return {ang:b.ang,spd:b.spd,moon:b.moon,n:b.p.n}})}};

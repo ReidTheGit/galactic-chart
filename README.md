@@ -1,4 +1,4 @@
-# Galactic Chart
+# Vash-Karel Galactic Charter
 
 An interactive 3D star chart built from a Stellaris save: It holds, 981 systems, 8,540 bodies,
 22 territorial empires, 3 federations and 15 nebulae, with an orbital view of every system.
