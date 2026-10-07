@@ -1,16 +1,10 @@
 # Galactic Chart
 
-An interactive 3D star chart built from a Stellaris save: 981 systems, 8,540 bodies,
+An interactive 3D star chart built from a Stellaris save: It holds, 981 systems, 8,540 bodies,
 22 territorial empires, 3 federations and 15 nebulae, with an orbital view of every system.
 
 It is one self-contained `index.html`. There is no build step and nothing to install —
 Three.js and the fonts load from public CDNs at runtime.
-
-## Deploy
-
-Put `index.html` at the root of a repository, then **Settings → Pages → Source:
-Deploy from a branch → `main` / `/ (root)`**. The site appears at
-`https://<user>.github.io/<repo>/` within a minute or two.
 
 ## Controls
 
